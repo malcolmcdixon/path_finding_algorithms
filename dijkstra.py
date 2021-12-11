@@ -76,21 +76,23 @@ def import_map(file: str) -> list[Node]:
 
 def find_best_path(nodes: list[Node], start: str, end: str) -> list[Node]:
     completed: list[Node] = []
-
     start_node = get_node_by_name(nodes, start)
     start_node.distance = 0
     end_node = get_node_by_name(nodes, end)
 
     while True:
+        # sort nodes by distance, shortest at end, pop() much quicker at end of array
         nodes.sort(reverse=True, key=lambda node: node.distance)
 
         node = nodes.pop()
-        completed.append(node)
 
+        # reached end node, must be shortest route
         if node == end_node:
+            completed.append(node)
             break
 
         for connection in node.connections:
+            # if node already visited process next connection
             if connection.connected_to not in nodes:
                 continue
 
@@ -101,6 +103,8 @@ def find_best_path(nodes: list[Node], start: str, end: str) -> list[Node]:
             if distance < ct_node.distance:
                 ct_node.distance = distance
                 ct_node.via = node
+
+        completed.append(node)
 
     return completed
 
