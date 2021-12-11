@@ -74,7 +74,7 @@ def import_map(file: str) -> list[Node]:
     return nodes
 
 
-def find_best_path(nodes: list[Node], start: str, end: str) -> list[Node]:
+def find_best_route(nodes: list[Node], start: str, end: str) -> list[Node]:
     completed: list[Node] = []
     start_node = get_node_by_name(nodes, start)
     start_node.distance = 0
@@ -106,21 +106,22 @@ def find_best_path(nodes: list[Node], start: str, end: str) -> list[Node]:
 
         completed.append(node)
 
-    return completed
-
-
-def main():
-    nodes = import_map("map_input.txt")
-
-    nodes = find_best_path(nodes, "S", "E")
-
-    node = get_node_by_name(nodes, "E")
     route = []
+    node = end_node
     while node:
         route.append(node)
         node = node.via
 
     route.sort(key=lambda node: node.distance)
+
+    return route
+
+
+def main():
+    nodes = import_map("map_input.txt")
+
+    route = find_best_route(nodes, "S", "E")
+
     for node in route:
         print(node.name, node.distance)
 
