@@ -30,7 +30,7 @@ class Node:
         return hash(self.name)
 
     def add_connection(self, connection) -> None:
-        # avoid reference to self
+        # avoid connection to self
         if self != connection.connected_to:
             self._connections.append(connection)
 
@@ -76,22 +76,22 @@ def import_map(file: str) -> list[Node]:
 
 def find_best_path(nodes: list[Node], start: str, end: str) -> list[Node]:
     completed: list[Node] = []
-    priority_list: list[Node] = nodes.copy()
 
     start_node = get_node_by_name(nodes, start)
     start_node.distance = 0
     end_node = get_node_by_name(nodes, end)
 
     while True:
-        priority_list.sort(reverse=True, key=lambda node: node.distance)
+        nodes.sort(reverse=True, key=lambda node: node.distance)
 
-        node = priority_list.pop()
+        node = nodes.pop()
+        completed.append(node)
 
         if node == end_node:
             break
 
         for connection in node.connections:
-            if connection.connected_to not in priority_list:
+            if connection.connected_to not in nodes:
                 continue
 
             # get connected to's node
@@ -102,15 +102,13 @@ def find_best_path(nodes: list[Node], start: str, end: str) -> list[Node]:
                 ct_node.distance = distance
                 ct_node.via = node
 
-        completed.append(node)
-
     return completed
 
 
 def main():
     nodes = import_map("map_input.txt")
 
-    best_path = find_best_path(nodes, "S", "E")
+    nodes = find_best_path(nodes, "S", "E")
 
     node = get_node_by_name(nodes, "E")
     route = []
