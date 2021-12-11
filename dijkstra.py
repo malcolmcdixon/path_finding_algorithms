@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Optional
 
 
 class Node:
@@ -7,14 +8,14 @@ class Node:
         self.name: str = name
         self._connections: list[Connection] = []
         self.distance: float = float("inf")
-        self._via: Node = None
+        self._via: Optional[Node] = None
 
     @property
     def connections(self) -> list[Connection]:
         return self._connections
 
     @property
-    def via(self) -> Node:
+    def via(self) -> Optional[Node]:
         return self._via
 
     @via.setter
@@ -23,13 +24,13 @@ class Node:
             raise ValueError("Cannot set via to self")
         self._via = node
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Node) -> bool:
         return self.name == other.name
 
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def add_connection(self, connection) -> None:
+    def add_connection(self, connection: Connection) -> None:
         # avoid connection to self
         if self != connection.connected_to:
             self._connections.append(connection)
@@ -41,7 +42,7 @@ class Connection:
     distance: float
 
 
-def get_node_by_name(nodes: list[Node], name: str) -> Node:
+def get_node_by_name(nodes: list[Node], name: str) -> Optional[Node]:
     for n in nodes:
         if n.name == name:
             return n
@@ -74,11 +75,15 @@ def import_map(file: str) -> list[Node]:
     return nodes
 
 
-def find_best_route(nodes: list[Node], start: str, end: str) -> list[Node]:
+def find_best_route(nodes: list[Node], start: str, end: str) -> Optional[list[Node]]:
     completed: list[Node] = []
     start_node = get_node_by_name(nodes, start)
+    if start_node is None:
+        return None
     start_node.distance = 0
     end_node = get_node_by_name(nodes, end)
+    if end_node is None:
+        return None
 
     while True:
         # sort nodes by distance, shortest at end, pop() much quicker at end of array
@@ -122,8 +127,11 @@ def main():
 
     route = find_best_route(nodes, "S", "E")
 
-    for node in route:
-        print(node.name, node.distance)
+    if route:
+        for node in route:
+            print(node.name, node.distance)
+    else:
+        print("Invalid start and / or end nodes")
 
 
 if __name__ == "__main__":
