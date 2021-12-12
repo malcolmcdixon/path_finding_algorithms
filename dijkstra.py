@@ -42,90 +42,104 @@ class Connection:
     distance: float
 
 
-def get_node_by_name(nodes: list[Node], name: str) -> Optional[Node]:
-    for n in nodes:
-        if n.name == name:
-            return n
-    return None
+@dataclass
+class Path:
+    start: str
+    end: str
+    distance: float
 
 
-def import_map(file: str) -> list[Node]:
-    nodes = []
-    with open(file) as f:
-        lines = f.readlines()
-        for line in lines:
-            start, end, distance = line.rstrip().split(",")
+class Graph:
+    def __init__(self) -> Graph:
+        self.nodes: dict[str, Node] = {}
 
-            start_node = get_node_by_name(nodes, start)
-            if start_node is None:
-                start_node = Node(start)
-                nodes.append(start_node)
+    def get_node_by_name(self, name: str, create: bool = False) -> Optional[Node]:
+        node = self.nodes.get(name, None)
 
-            end_node = get_node_by_name(nodes, end)
-            if end_node is None:
-                end_node = Node(end)
-                nodes.append(end_node)
+        if node is None and create:
+            node = Node(name)
+            self.nodes[name] = node
 
-            distance = float(distance)
+        return node
+
+    def create_nodes(self, paths: list[Path]) -> None:
+        for path in paths:
+            start_node = self.get_node_by_name(path.start, True)
+            end_node = self.get_node_by_name(path.end, True)
+
+            distance = float(path.distance)
             conn_s_e = Connection(end_node, distance)
             conn_e_s = Connection(start_node, distance)
             start_node.add_connection(conn_s_e)
             end_node.add_connection(conn_e_s)
 
-    return nodes
+    def find_best_route(self, start: str, end: str) -> Optional[list[Node]]:
+        completed: list[Node] = []
+        nodes = list(self.nodes.values())
+        start_node = self.get_node_by_name(start)
+        if start_node is None:
+            return None
+        start_node.distance = 0
+        end_node = self.get_node_by_name(end)
+        if end_node is None:
+            return None
 
+        while True:
+            # sort nodes by distance, shortest at end, pop() much quicker at end of array
+            nodes.sort(reverse=True, key=lambda node: node.distance)
 
-def find_best_route(nodes: list[Node], start: str, end: str) -> Optional[list[Node]]:
-    completed: list[Node] = []
-    start_node = get_node_by_name(nodes, start)
-    if start_node is None:
-        return None
-    start_node.distance = 0
-    end_node = get_node_by_name(nodes, end)
-    if end_node is None:
-        return None
+            node = nodes.pop()
 
-    while True:
-        # sort nodes by distance, shortest at end, pop() much quicker at end of array
-        nodes.sort(reverse=True, key=lambda node: node.distance)
+            # reached end node, must be shortest route
+            if node == end_node:
+                completed.append(node)
+                break
 
-        node = nodes.pop()
+            for connection in node.connections:
+                # if node already visited process next connection
+                if connection.connected_to not in nodes:
+                    continue
 
-        # reached end node, must be shortest route
-        if node == end_node:
+                # get connected to's node
+                ct_node = connection.connected_to
+                # update distance and via
+                distance = node.distance + connection.distance
+                if distance < ct_node.distance:
+                    ct_node.distance = distance
+                    ct_node.via = node
+
             completed.append(node)
-            break
 
-        for connection in node.connections:
-            # if node already visited process next connection
-            if connection.connected_to not in nodes:
-                continue
+        route = []
+        node = end_node
+        while node:
+            route.append(node)
+            node = node.via
 
-            # get connected to's node
-            ct_node = connection.connected_to
-            # update distance and via
-            distance = node.distance + connection.distance
-            if distance < ct_node.distance:
-                ct_node.distance = distance
-                ct_node.via = node
+        route.sort(key=lambda node: node.distance)
 
-        completed.append(node)
+        return route
 
-    route = []
-    node = end_node
-    while node:
-        route.append(node)
-        node = node.via
 
-    route.sort(key=lambda node: node.distance)
+def import_paths(file: str) -> list[Path]:
+    paths: list[Path] = []
+    with open(file) as f:
+        lines = f.readlines()
+        for line in lines:
+            start, end, distance = line.rstrip().split(",")
 
-    return route
+            paths.append(Path(start, end, distance))
+
+    return paths
 
 
 def main():
-    nodes = import_map("map_input.txt")
+    paths = import_paths("map_input.txt")
 
-    route = find_best_route(nodes, "S", "E")
+    graph = Graph()
+    graph.create_nodes(paths)
+
+    route = graph.find_best_route("S", "E")
 
     if route:
         for node in route:
